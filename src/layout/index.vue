@@ -39,10 +39,7 @@
           <el-icon><Message /></el-icon>
           <span>会话</span>
         </el-menu-item>
-        <el-menu-item index="/media">
-          <el-icon><Picture /></el-icon>
-          <span>多媒体</span>
-        </el-menu-item>
+
       </el-menu>
     </div>
 

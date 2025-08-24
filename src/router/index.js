@@ -43,12 +43,7 @@ const routes = [
         component: () => import('@/views/Sessions.vue'),
         meta: { title: '会话列表' }
       },
-      {
-        path: '/media',
-        name: 'Media',
-        component: () => import('@/views/Media.vue'),
-        meta: { title: '多媒体管理' }
-      }
+
     ]
   }
 ]

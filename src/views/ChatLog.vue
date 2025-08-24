@@ -11,16 +11,20 @@
         <el-row :gutter="20">
           <el-col :span="8">
             <el-form-item label="时间范围">
-              <el-date-picker
-                v-model="dateRange"
-                type="daterange"
-                range-separator="至"
-                start-placeholder="开始日期"
-                end-placeholder="结束日期"
-                format="YYYY-MM-DD"
-                value-format="YYYY-MM-DD"
-                style="width: 100%"
-              />
+              <div class="date-picker-container">
+                <el-date-picker
+                  v-model="dateRange"
+                  type="daterange"
+                  range-separator="至"
+                  start-placeholder="开始日期"
+                  end-placeholder="结束日期"
+                  format="YYYY-MM-DD"
+                  value-format="YYYY-MM-DD"
+                  :disabled-date="disabledDate"
+                  :shortcuts="dateShortcuts"
+                  style="width: 100%"
+                />
+              </div>
             </el-form-item>
           </el-col>
           <el-col :span="8">
@@ -81,7 +85,7 @@
               </el-radio-group>
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+          <el-col :span="4">
             <el-form-item label="数据格式">
               <el-select v-model="searchParams.format" style="width: 100%">
                 <el-option label="JSON" value="json" />
@@ -90,7 +94,7 @@
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+          <el-col :span="4">
             <el-form-item label="每页数量">
               <el-select v-model="searchParams.limit" style="width: 100%">
                 <el-option label="20条" :value="20" />
@@ -100,24 +104,26 @@
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="6">
-            <el-form-item>
-              <el-button type="primary" @click="handleSearch" :loading="loading">
-                <el-icon><Search /></el-icon>
-                搜索
-              </el-button>
-              <el-button @click="handleReset">
-                <el-icon><Refresh /></el-icon>
-                重置
-              </el-button>
-              <el-button 
-                type="success" 
-                @click="handleExport"
-                :disabled="!chatLogs.length"
-              >
-                <el-icon><Download /></el-icon>
-                导出
-              </el-button>
+          <el-col :span="10">
+            <el-form-item label=" ">
+              <div class="button-group">
+                <el-button type="primary" @click="handleSearch" :loading="loading">
+                  <el-icon><Search /></el-icon>
+                  搜索
+                </el-button>
+                <el-button @click="handleReset">
+                  <el-icon><Refresh /></el-icon>
+                  重置
+                </el-button>
+                <el-button 
+                  type="success" 
+                  @click="handleExport"
+                  :disabled="!chatLogs.length"
+                >
+                  <el-icon><Download /></el-icon>
+                  导出
+                </el-button>
+              </div>
             </el-form-item>
           </el-col>
         </el-row>
@@ -178,53 +184,69 @@
           <div 
             v-for="(message, index) in chatLogs" 
             :key="index"
-            class="chat-message"
+            class="chat-message-wrapper"
+            :class="{ 'is-self': isSelfMessage(message) }"
           >
-            <div class="message-header">
-              <div class="message-sender">
-                <el-avatar :size="32" class="sender-avatar">
+            <div class="chat-message" :class="{ 'self-message': isSelfMessage(message) }">
+              <div class="message-avatar" v-if="!isSelfMessage(message)">
+                <el-avatar :size="36" class="sender-avatar" :style="{ backgroundColor: getAvatarColor(message.senderName) }">
                   {{ getSenderInitial(message.senderName) }}
                 </el-avatar>
-                <span class="sender-name">{{ message.senderName || '未知' }}</span>
-                <el-tag 
-                  v-if="message.senderId" 
-                  size="small" 
-                  type="info"
-                  class="talker-tag"
-                >
-                  {{ message.senderId }}
-                </el-tag>
-                <!-- 高亮匹配的关键词 -->
-                <el-tag 
-                  v-if="getMatchedKeywords(message.content).length > 0"
-                  size="small"
-                  type="success"
-                  effect="light"
-                  class="keyword-tag"
-                >
-                  匹配: {{ getMatchedKeywords(message.content).join(', ') }}
-                </el-tag>
               </div>
-              <div class="message-time">
-                {{ formatTime(message.time) }}
+              
+              <div class="message-body">
+                <div class="message-info">
+                  <span class="sender-name" :class="{ 'self-name': isSelfMessage(message) }">
+                    {{ message.senderName || '未知' }}
+                  </span>
+                  <span class="message-time">{{ formatTime(message.time) }}</span>
+                  
+                  <!-- 标签信息 -->
+                  <div class="message-tags" v-if="message.senderId || getMatchedKeywords(message.content).length > 0">
+                    <el-tag 
+                      v-if="message.senderId" 
+                      size="small" 
+                      type="info"
+                      class="talker-tag"
+                    >
+                      {{ message.senderId }}
+                    </el-tag>
+                    <el-tag 
+                      v-if="getMatchedKeywords(message.content).length > 0"
+                      size="small"
+                      type="success"
+                      effect="light"
+                      class="keyword-tag"
+                    >
+                      匹配: {{ getMatchedKeywords(message.content).join(', ') }}
+                    </el-tag>
+                  </div>
+                </div>
+                
+                <div class="message-content" :class="{ 'self-content': isSelfMessage(message) }">
+                  <!-- 解析消息内容中的多媒体格式 -->
+                  <div v-if="message.content && message.content.includes('![图片]')" class="text-message">
+                    <div v-html="parseMediaContent(message.content)"></div>
+                  </div>
+                  <div v-else-if="message.content && message.content.includes('![视频]')" class="text-message">
+                    <div v-html="parseMediaContent(message.content)"></div>
+                  </div>
+                  <div v-else-if="message.content && message.content.includes('![语音]')" class="text-message">
+                    <div v-html="parseMediaContent(message.content)"></div>
+                  </div>
+                  <div v-else-if="message.content && message.content.includes('![文件]')" class="text-message">
+                    <div v-html="parseMediaContent(message.content)"></div>
+                  </div>
+                  <div v-else class="text-message">
+                    <span v-html="highlightKeywords(message.content || '空消息')"></span>
+                  </div>
+                </div>
               </div>
-            </div>
-            <div class="message-content">
-              <!-- 解析消息内容中的多媒体格式 -->
-              <div v-if="message.content && message.content.includes('![图片]')" class="text-message">
-                <div v-html="parseMediaContent(message.content)"></div>
-              </div>
-              <div v-else-if="message.content && message.content.includes('![视频]')" class="text-message">
-                <div v-html="parseMediaContent(message.content)"></div>
-              </div>
-              <div v-else-if="message.content && message.content.includes('![语音]')" class="text-message">
-                <div v-html="parseMediaContent(message.content)"></div>
-              </div>
-              <div v-else-if="message.content && message.content.includes('![文件]')" class="text-message">
-                <div v-html="parseMediaContent(message.content)"></div>
-              </div>
-              <div v-else class="text-message">
-                <span v-html="highlightKeywords(message.content || '空消息')"></span>
+              
+              <div class="message-avatar" v-if="isSelfMessage(message)">
+                <el-avatar :size="36" class="sender-avatar self-avatar" :style="{ backgroundColor: getAvatarColor(message.senderName) }">
+                  {{ getSenderInitial(message.senderName) }}
+                </el-avatar>
               </div>
             </div>
           </div>
@@ -298,6 +320,74 @@ export default {
       talkers: [],
       keywords: []
     })
+
+    // 日期快捷选择选项
+    const dateShortcuts = [
+      {
+        text: '今天',
+        value: () => {
+          const today = dayjs()
+          return [today.format('YYYY-MM-DD'), today.format('YYYY-MM-DD')]
+        }
+      },
+      {
+        text: '昨天',
+        value: () => {
+          const yesterday = dayjs().subtract(1, 'day')
+          return [yesterday.format('YYYY-MM-DD'), yesterday.format('YYYY-MM-DD')]
+        }
+      },
+      {
+        text: '最近7天',
+        value: () => {
+          const end = dayjs()
+          const start = end.subtract(6, 'day')
+          return [start.format('YYYY-MM-DD'), end.format('YYYY-MM-DD')]
+        }
+      },
+      {
+        text: '最近30天',
+        value: () => {
+          const end = dayjs()
+          const start = end.subtract(29, 'day')
+          return [start.format('YYYY-MM-DD'), end.format('YYYY-MM-DD')]
+        }
+      }
+    ]
+
+    // 禁用未来日期
+    const disabledDate = (time) => {
+      return time.getTime() > Date.now()
+    }
+
+    // 判断是否为自己发送的消息（这里可以根据实际需求调整判断逻辑）
+    const isSelfMessage = (message) => {
+      // 这里可以根据实际的用户标识来判断
+      // 暂时使用一个简单的规则：如果senderId包含特定标识符
+      const selfIdentifiers = ['self', 'me', '我', 'myself']
+      return selfIdentifiers.some(id => 
+        (message.senderId && message.senderId.toLowerCase().includes(id)) ||
+        (message.senderName && message.senderName.includes(id))
+      )
+    }
+
+    // 根据发送者名称生成头像颜色
+    const getAvatarColor = (senderName) => {
+      if (!senderName) return '#409eff'
+      
+      const colors = [
+        '#409eff', '#67c23a', '#e6a23c', '#f56c6c', 
+        '#909399', '#c71585', '#ff6347', '#32cd32',
+        '#1e90ff', '#ff69b4', '#ffd700', '#8a2be2'
+      ]
+      
+      let hash = 0
+      for (let i = 0; i < senderName.length; i++) {
+        hash = senderName.charCodeAt(i) + ((hash << 5) - hash)
+      }
+      
+      return colors[Math.abs(hash) % colors.length]
+    }
 
     // 搜索聊天记录
     const handleSearch = async () => {
@@ -717,7 +807,11 @@ export default {
       updateTalkerOptions,
       updateKeywordOptions,
       initializeHistory,
-      saveHistory
+      saveHistory,
+      dateShortcuts,
+      disabledDate,
+      isSelfMessage,
+      getAvatarColor
     }
   }
 }
@@ -728,26 +822,135 @@ export default {
   padding: 20px;
 }
 
+.search-form {
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+}
+
+.button-group {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.date-picker-container {
+  width: 100%;
+}
+
 .chat-messages {
   max-height: 600px;
   overflow-y: auto;
+  padding: 10px;
+  background: #f5f7fa;
+  border-radius: 8px;
+}
+
+.chat-message-wrapper {
+  margin-bottom: 16px;
+}
+
+.chat-message-wrapper.is-self {
+  display: flex;
+  justify-content: flex-end;
 }
 
 .chat-message {
-  padding: 15px;
-  border-bottom: 1px solid #e4e7ed;
-  transition: background-color 0.3s;
-}
-
-.chat-message:hover {
-  background-color: #f8f9fa;
-}
-
-.message-header {
   display: flex;
-  justify-content: space-between;
+  align-items: flex-start;
+  max-width: 70%;
+  gap: 12px;
+}
+
+.chat-message.self-message {
+  flex-direction: row-reverse;
+}
+
+.message-avatar {
+  flex-shrink: 0;
+}
+
+.sender-avatar {
+  border: 2px solid #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.self-avatar {
+  border-color: #409eff;
+}
+
+.message-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.message-info {
+  display: flex;
   align-items: center;
-  margin-bottom: 10px;
+  gap: 8px;
+  margin-bottom: 6px;
+  flex-wrap: wrap;
+}
+
+.sender-name {
+  font-weight: 600;
+  color: #303133;
+  font-size: 14px;
+}
+
+.self-name {
+  color: #409eff;
+}
+
+.message-time {
+  font-size: 12px;
+  color: #909399;
+}
+
+.message-tags {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.message-content {
+  background: #fff;
+  padding: 12px 16px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  position: relative;
+  word-wrap: break-word;
+  line-height: 1.5;
+}
+
+.message-content::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  left: -8px;
+  width: 0;
+  height: 0;
+  border-top: 8px solid transparent;
+  border-bottom: 8px solid transparent;
+  border-right: 8px solid #fff;
+}
+
+.self-content {
+  background: #409eff;
+  color: #fff;
+}
+
+.self-content::before {
+  left: auto;
+  right: -8px;
+  border-right: none;
+  border-left: 8px solid #409eff;
+}
+
+.text-message {
+  margin: 0;
 }
 
 .message-sender {
