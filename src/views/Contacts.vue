@@ -3,7 +3,7 @@
     <div class="card">
       <div class="card-header">
         <h3>联系人管理</h3>
-        <el-button type="primary" @click="loadContacts">
+        <el-button type="primary" @click="handleRefresh">
           <el-icon><Refresh /></el-icon>
           刷新
         </el-button>
@@ -87,7 +87,7 @@
             <el-pagination
               v-model:current-page="currentPage"
               :page-size="pageSize"
-              :total="filteredContacts.length"
+              :total="computedTotal"
               layout="total, prev, pager, next, jumper"
               @current-change="handlePageChange"
             />
@@ -113,9 +113,11 @@ export default {
     const loading = ref(false)
     const contacts = ref([])
     const total = ref(0)
+    const totalContacts = ref(0)
     const searchKeyword = ref('')
     const currentPage = ref(1)
     const pageSize = ref(20)
+    const pagination = ref({})
 
     // 过滤后的联系人列表
     const filteredContacts = computed(() => {
@@ -129,13 +131,34 @@ export default {
       )
     })
 
-    // 显示的联系人列表（API已处理分页，直接使用过滤后的数据）
+    // 显示的联系人列表
     const paginatedContacts = computed(() => {
-      return filteredContacts.value
+      // 如果有搜索关键词，使用过滤后的数据进行客户端分页
+      if (searchKeyword.value) {
+        const filtered = filteredContacts.value
+        const start = (currentPage.value - 1) * pageSize.value
+        const end = start + pageSize.value
+        return filtered.slice(start, end)
+      }
+      // 否则直接使用API返回的数据（已经是分页后的）
+      return contacts.value
+    })
+
+    // 计算总数，用于分页组件
+    const computedTotal = computed(() => {
+      if (searchKeyword.value) {
+        return filteredContacts.value.length
+      }
+      return totalContacts.value
     })
 
     // 加载联系人列表
     const loadContacts = async (page = 1) => {
+      // 确保page参数是数字类型
+      if (typeof page !== 'number') {
+        page = 1
+      }
+      
       const currentSource = store.getters.getCurrentSource
       if (!currentSource) {
         ElMessage.warning('请先选择数据源')
@@ -147,7 +170,11 @@ export default {
         const response = await api.getContacts(currentSource.source_id, page, pageSize.value)
         contacts.value = response.data || []
         total.value = response.total || 0
-        ElMessage.success(`加载了 ${contacts.value.length} 个联系人，共 ${total.value} 个`)
+        pagination.value = response.pagination || {}
+        totalContacts.value = pagination.value.total_items || total.value
+        currentPage.value = pagination.value.current_page || page
+        
+        ElMessage.success(`加载了 ${contacts.value.length} 个联系人，共 ${totalContacts.value} 个`)
       } catch (error) {
         ElMessage.error('加载联系人失败: ' + error.message)
       } finally {
@@ -158,12 +185,27 @@ export default {
     // 搜索处理
     const handleSearch = () => {
       currentPage.value = 1
+      // 如果有搜索关键词，不需要重新加载数据，使用客户端过滤
+      // 如果没有搜索关键词，重新加载第一页数据
+      if (!searchKeyword.value) {
+        loadContacts(1)
+      }
     }
 
     // 分页处理
     const handlePageChange = (page) => {
-      currentPage.value = page
+      // 如果有搜索关键词，使用客户端分页，不需要重新加载数据
+      if (searchKeyword.value) {
+        currentPage.value = page
+        return
+      }
+      // 否则从服务器加载对应页的数据
       loadContacts(page)
+    }
+
+    // 刷新处理
+    const handleRefresh = () => {
+      loadContacts(currentPage.value)
     }
 
     // 行点击处理
@@ -240,14 +282,18 @@ export default {
       loading,
       contacts,
       total,
+      totalContacts,
+      pagination,
       searchKeyword,
       currentPage,
       pageSize,
       filteredContacts,
       paginatedContacts,
+      computedTotal,
       loadContacts,
       handleSearch,
       handlePageChange,
+      handleRefresh,
       handleRowClick,
       viewChatHistory,
       copyContactId,
