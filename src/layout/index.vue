@@ -31,10 +31,7 @@
           <el-icon><User /></el-icon>
           <span>联系人</span>
         </el-menu-item>
-        <el-menu-item index="/chatrooms">
-          <el-icon><UserFilled /></el-icon>
-          <span>群聊</span>
-        </el-menu-item>
+
         <el-menu-item index="/sessions">
           <el-icon><Message /></el-icon>
           <span>会话</span>
@@ -97,9 +94,7 @@ export default {
         case 'Contacts':
           store.dispatch('fetchContacts')
           break
-        case 'ChatRooms':
-          store.dispatch('fetchChatrooms')
-          break
+
         case 'Sessions':
           store.dispatch('fetchSessions')
           break

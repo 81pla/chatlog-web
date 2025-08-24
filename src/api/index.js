@@ -226,29 +226,7 @@ export default {
     }
   },
   
-  // 群聊列表 - 通过会话接口获取群聊
-  async getChatrooms(sourceId) {
-    const response = await api.get('/api/v1/session', {
-      params: { 
-        source: sourceId,
-        includeChatroom: 1
-      }
-    })
-    if (response.data && response.data.success) {
-      // 过滤出群聊
-      const chatrooms = response.data.data.filter(session => 
-        session.talker && session.talker.includes('@chatroom')
-      )
-      return {
-        ...response,
-        data: chatrooms
-      }
-    }
-    return {
-      ...response,
-      data: []
-    }
-  },
+
   
   // 会话列表 - 适配新的会话 API
   async getSessions(sourceId) {

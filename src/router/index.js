@@ -31,12 +31,7 @@ const routes = [
         component: () => import('@/views/Contacts.vue'),
         meta: { title: '联系人管理' }
       },
-      {
-        path: '/chatrooms',
-        name: 'ChatRooms',
-        component: () => import('@/views/ChatRooms.vue'),
-        meta: { title: '群聊管理' }
-      },
+
       {
         path: '/sessions',
         name: 'Sessions',

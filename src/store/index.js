@@ -5,7 +5,7 @@ export default createStore({
   state: {
     loading: false,
     contacts: [],
-    chatrooms: [],
+
     sessions: [],
     chatLogs: [],
     currentPage: 1,
@@ -24,9 +24,7 @@ export default createStore({
     SET_CONTACTS(state, contacts) {
       state.contacts = contacts
     },
-    SET_CHATROOMS(state, chatrooms) {
-      state.chatrooms = chatrooms
-    },
+
     SET_SESSIONS(state, sessions) {
       state.sessions = sessions
     },
@@ -123,22 +121,7 @@ export default createStore({
       }
     },
     
-    async fetchChatrooms({ commit, state }) {
-      if (!state.currentSource) {
-        throw new Error('请先选择数据源')
-      }
-      
-      commit('SET_LOADING', true)
-      try {
-        const response = await api.getChatrooms(state.currentSource.source_id)
-        commit('SET_CHATROOMS', response.data)
-      } catch (error) {
-        console.error('获取群聊失败:', error)
-        throw error
-      } finally {
-        commit('SET_LOADING', false)
-      }
-    },
+
     
     async fetchSessions({ commit, state }) {
       if (!state.currentSource) {
@@ -187,7 +170,7 @@ export default createStore({
   getters: {
     isLoading: state => state.loading,
     getContacts: state => state.contacts,
-    getChatrooms: state => state.chatrooms,
+
     getSessions: state => state.sessions,
     getChatLogs: state => state.chatLogs,
     getPagination: state => ({
