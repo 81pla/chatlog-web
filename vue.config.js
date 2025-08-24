@@ -9,6 +9,19 @@ module.exports = defineConfig({
     host: '0.0.0.0',
     https: false,
     open: true,
+    client: {
+      overlay: {
+        errors: true,
+        warnings: false,
+        runtimeErrors: (error) => {
+          const ignoreErrors = [
+            'ResizeObserver loop completed with undelivered notifications',
+            'ResizeObserver loop limit exceeded'
+          ]
+          return !ignoreErrors.some(ignoreError => error.message.includes(ignoreError))
+        }
+      }
+    },
     proxy: {
       // API请求代理
       '/api': {
