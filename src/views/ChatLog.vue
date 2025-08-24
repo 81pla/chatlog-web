@@ -8,23 +8,22 @@
         label-width="100px"
         @submit.prevent="handleSearch"
       >
-        <el-row :gutter="20">
-          <el-col :span="8">
+        <!-- 第一行：主要搜索条件 -->
+        <el-row :gutter="20" class="search-row">
+          <el-col :span="7">
             <el-form-item label="时间范围">
-              <div class="date-picker-container">
-                <el-date-picker
-                  v-model="dateRange"
-                  type="daterange"
-                  range-separator="至"
-                  start-placeholder="开始日期"
-                  end-placeholder="结束日期"
-                  format="YYYY-MM-DD"
-                  value-format="YYYY-MM-DD"
-                  :disabled-date="disabledDate"
-                  :shortcuts="dateShortcuts"
-                  style="width: 100%"
-                />
-              </div>
+              <el-date-picker
+                v-model="dateRange"
+                type="daterange"
+                range-separator="至"
+                start-placeholder="开始日期"
+                end-placeholder="结束日期"
+                format="YYYY-MM-DD"
+                value-format="YYYY-MM-DD"
+                :disabled-date="disabledDate"
+                :shortcuts="dateShortcuts"
+                style="width: 100%"
+              />
             </el-form-item>
           </el-col>
           <el-col :span="8">
@@ -35,7 +34,7 @@
                 filterable
                 allow-create
                 default-first-option
-                placeholder="选择或输入聊天对象（支持多选）"
+                placeholder="选择或输入聊天对象"
                 style="width: 100%"
                 @change="handleTalkerChange"
               >
@@ -46,12 +45,9 @@
                   :value="item.value"
                 />
               </el-select>
-              <div class="input-hint">
-                可输入微信ID、群聊ID、备注名、昵称等，支持多个选择
-              </div>
             </el-form-item>
           </el-col>
-          <el-col :span="8">
+          <el-col :span="9">
             <el-form-item label="关键词">
               <el-select
                 v-model="searchParams.keyword"
@@ -59,7 +55,7 @@
                 filterable
                 allow-create
                 default-first-option
-                placeholder="输入关键词（支持多个）"
+                placeholder="输入关键词"
                 style="width: 100%"
                 @change="handleKeywordChange"
               >
@@ -70,16 +66,15 @@
                   :value="item.value"
                 />
               </el-select>
-              <div class="input-hint">
-                输入消息内容关键词，支持多个关键词搜索
-              </div>
             </el-form-item>
           </el-col>
         </el-row>
-        <el-row :gutter="20">
-          <el-col :span="6">
+        
+        <!-- 第二行：高级选项和操作按钮 -->
+        <el-row :gutter="20" class="search-row advanced-options">
+          <el-col :span="5">
             <el-form-item label="搜索模式">
-              <el-radio-group v-model="searchMode">
+              <el-radio-group v-model="searchMode" size="small">
                 <el-radio value="and">全部匹配</el-radio>
                 <el-radio value="or">任意匹配</el-radio>
               </el-radio-group>
@@ -87,7 +82,7 @@
           </el-col>
           <el-col :span="4">
             <el-form-item label="数据格式">
-              <el-select v-model="searchParams.format" style="width: 100%">
+              <el-select v-model="searchParams.format" size="small" style="width: 100%">
                 <el-option label="JSON" value="json" />
                 <el-option label="CSV" value="csv" />
                 <el-option label="纯文本" value="text" />
@@ -96,7 +91,7 @@
           </el-col>
           <el-col :span="4">
             <el-form-item label="每页数量">
-              <el-select v-model="searchParams.limit" style="width: 100%">
+              <el-select v-model="searchParams.limit" size="small" style="width: 100%">
                 <el-option label="20条" :value="20" />
                 <el-option label="50条" :value="50" />
                 <el-option label="100条" :value="100" />
@@ -104,8 +99,8 @@
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="10">
-            <el-form-item label=" ">
+          <el-col :span="11">
+            <el-form-item label=" " class="button-form-item">
               <div class="button-group">
                 <el-button type="primary" @click="handleSearch" :loading="loading">
                   <el-icon><Search /></el-icon>
@@ -360,10 +355,14 @@ export default {
       return time.getTime() > Date.now()
     }
 
-    // 判断是否为自己发送的消息（这里可以根据实际需求调整判断逻辑）
+    // 判断是否为自己发送的消息
     const isSelfMessage = (message) => {
-      // 这里可以根据实际的用户标识来判断
-      // 暂时使用一个简单的规则：如果senderId包含特定标识符
+      // "未知"代表自己发送的消息，应该显示在右边
+      if (!message.senderName || message.senderName === '未知') {
+        return true
+      }
+      
+      // 其他可能的自己标识符
       const selfIdentifiers = ['self', 'me', '我', 'myself']
       return selfIdentifiers.some(id => 
         (message.senderId && message.senderId.toLowerCase().includes(id)) ||
@@ -824,32 +823,74 @@ export default {
 
 .search-form {
   background: #fff;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-  margin-bottom: 20px;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.08);
+  margin-bottom: 24px;
+  border: 1px solid #f0f0f0;
+}
+
+.search-row {
+  margin-bottom: 16px;
+}
+
+.search-row:last-child {
+  margin-bottom: 0;
+}
+
+.advanced-options {
+  padding-top: 12px;
+  border-top: 1px solid #f5f5f5;
+}
+
+.button-form-item {
+  margin-bottom: 0 !important;
 }
 
 .button-group {
   display: flex;
   gap: 12px;
-  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-start;
 }
 
-.date-picker-container {
-  width: 100%;
+.search-preview {
+  margin-top: 16px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #409eff;
+}
+
+.preview-title {
+  font-weight: 600;
+  color: #303133;
+  margin-bottom: 8px;
+}
+
+.preview-tags {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.preview-mode {
+  font-size: 13px;
 }
 
 .chat-messages {
-  max-height: 600px;
+  max-height: 70vh;
   overflow-y: auto;
-  padding: 10px;
-  background: #f5f7fa;
-  border-radius: 8px;
+  padding: 20px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  border-radius: 12px;
+  border: 1px solid #e4e7ed;
 }
 
 .chat-message-wrapper {
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+  animation: fadeInUp 0.3s ease-out;
 }
 
 .chat-message-wrapper.is-self {
@@ -860,7 +901,7 @@ export default {
 .chat-message {
   display: flex;
   align-items: flex-start;
-  max-width: 70%;
+  max-width: 75%;
   gap: 12px;
 }
 
@@ -870,11 +911,17 @@ export default {
 
 .message-avatar {
   flex-shrink: 0;
+  margin-top: 4px;
 }
 
 .sender-avatar {
-  border: 2px solid #fff;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 3px solid #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: transform 0.2s ease;
+}
+
+.sender-avatar:hover {
+  transform: scale(1.05);
 }
 
 .self-avatar {
@@ -890,7 +937,7 @@ export default {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   flex-wrap: wrap;
 }
 
@@ -902,55 +949,128 @@ export default {
 
 .self-name {
   color: #409eff;
+  text-align: right;
 }
 
 .message-time {
   font-size: 12px;
   color: #909399;
+  white-space: nowrap;
 }
 
 .message-tags {
   display: flex;
-  gap: 4px;
+  gap: 6px;
   flex-wrap: wrap;
+  margin-top: 4px;
 }
 
 .message-content {
   background: #fff;
-  padding: 12px 16px;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  padding: 14px 18px;
+  border-radius: 18px;
+  box-shadow: 0 3px 15px rgba(0, 0, 0, 0.1);
   position: relative;
   word-wrap: break-word;
-  line-height: 1.5;
+  line-height: 1.6;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.message-content:hover {
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
 }
 
 .message-content::before {
   content: '';
   position: absolute;
-  top: 8px;
-  left: -8px;
+  top: 12px;
+  left: -10px;
   width: 0;
   height: 0;
-  border-top: 8px solid transparent;
-  border-bottom: 8px solid transparent;
-  border-right: 8px solid #fff;
+  border-top: 10px solid transparent;
+  border-bottom: 10px solid transparent;
+  border-right: 10px solid #fff;
 }
 
 .self-content {
-  background: #409eff;
+  background: linear-gradient(135deg, #409eff 0%, #36a3f7 100%);
   color: #fff;
 }
 
 .self-content::before {
   left: auto;
-  right: -8px;
+  right: -10px;
   border-right: none;
-  border-left: 8px solid #409eff;
+  border-left: 10px solid #409eff;
 }
 
 .text-message {
   margin: 0;
+}
+
+.keyword-highlight {
+  background: #fff3cd;
+  color: #856404;
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.self-content .keyword-highlight {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 聊天记录卡片样式 */
+.card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid #f0f0f0;
+  overflow: hidden;
+}
+
+.card-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #f0f0f0;
+  background: #fafafa;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-header h3 {
+  margin: 0;
+  color: #303133;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.card-body {
+  padding: 24px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.pagination {
+  margin-top: 24px;
+  display: flex;
+  justify-content: center;
 }
 
 .message-sender {
