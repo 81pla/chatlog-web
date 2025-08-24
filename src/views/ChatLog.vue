@@ -883,14 +883,12 @@ export default {
   max-height: 70vh;
   overflow-y: auto;
   padding: 20px;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-  border-radius: 12px;
-  border: 1px solid #e4e7ed;
+  background: #f5f5f5;
+  border-radius: 8px;
 }
 
 .chat-message-wrapper {
-  margin-bottom: 20px;
-  animation: fadeInUp 0.3s ease-out;
+  margin-bottom: 16px;
 }
 
 .chat-message-wrapper.is-self {
@@ -901,8 +899,8 @@ export default {
 .chat-message {
   display: flex;
   align-items: flex-start;
-  max-width: 75%;
-  gap: 12px;
+  max-width: 70%;
+  gap: 10px;
 }
 
 .chat-message.self-message {
@@ -911,21 +909,12 @@ export default {
 
 .message-avatar {
   flex-shrink: 0;
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
 .sender-avatar {
-  border: 3px solid #fff;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  transition: transform 0.2s ease;
-}
-
-.sender-avatar:hover {
-  transform: scale(1.05);
-}
-
-.self-avatar {
-  border-color: #409eff;
+  border: 1px solid #e0e0e0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .message-body {
@@ -937,24 +926,24 @@ export default {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   flex-wrap: wrap;
 }
 
 .sender-name {
-  font-weight: 600;
-  color: #303133;
-  font-size: 14px;
+  font-weight: 500;
+  color: #666;
+  font-size: 13px;
 }
 
 .self-name {
-  color: #409eff;
+  color: #666;
   text-align: right;
 }
 
 .message-time {
   font-size: 12px;
-  color: #909399;
+  color: #999;
   white-space: nowrap;
 }
 
@@ -967,42 +956,38 @@ export default {
 
 .message-content {
   background: #fff;
-  padding: 14px 18px;
-  border-radius: 18px;
-  box-shadow: 0 3px 15px rgba(0, 0, 0, 0.1);
+  padding: 10px 14px;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
   position: relative;
   word-wrap: break-word;
-  line-height: 1.6;
+  line-height: 1.5;
   font-size: 14px;
-  transition: all 0.2s ease;
-}
-
-.message-content:hover {
-  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+  color: #333;
 }
 
 .message-content::before {
   content: '';
   position: absolute;
-  top: 12px;
-  left: -10px;
+  top: 10px;
+  left: -6px;
   width: 0;
   height: 0;
-  border-top: 10px solid transparent;
-  border-bottom: 10px solid transparent;
-  border-right: 10px solid #fff;
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-right: 6px solid #fff;
 }
 
 .self-content {
-  background: linear-gradient(135deg, #409eff 0%, #36a3f7 100%);
-  color: #fff;
+  background: #95ec69;
+  color: #333;
 }
 
 .self-content::before {
   left: auto;
-  right: -10px;
+  right: -6px;
   border-right: none;
-  border-left: 10px solid #409eff;
+  border-left: 6px solid #95ec69;
 }
 
 .text-message {
@@ -1010,27 +995,16 @@ export default {
 }
 
 .keyword-highlight {
-  background: #fff3cd;
-  color: #856404;
-  padding: 2px 4px;
-  border-radius: 4px;
-  font-weight: 600;
+  background: #ffeb3b;
+  color: #333;
+  padding: 1px 3px;
+  border-radius: 3px;
+  font-weight: 500;
 }
 
 .self-content .keyword-highlight {
-  background: rgba(255, 255, 255, 0.2);
-  color: #fff;
-}
-
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  background: rgba(255, 255, 255, 0.8);
+  color: #333;
 }
 
 /* 聊天记录卡片样式 */
