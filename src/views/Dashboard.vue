@@ -92,12 +92,12 @@
             >
               <div class="session-avatar">
                 <el-avatar :size="40">
-                  {{ session.name ? session.name.charAt(0) : '?' }}
+                  {{ (session.talkerName || session.name || session.displayName || session.talker || '?').charAt(0) }}
                 </el-avatar>
               </div>
               <div class="session-info">
-                <div class="session-name">{{ session.name || '未知' }}</div>
-                <div class="session-time">{{ formatTime(session.lastMessageTime) }}</div>
+                <div class="session-name">{{ session.talkerName || session.name || session.displayName || session.talker || '未知' }}</div>
+                <div class="session-time">{{ formatTime(session.lastMessageTime || session.lastTime) }}</div>
               </div>
             </div>
           </div>
@@ -197,8 +197,9 @@ export default {
       const sevenDaysAgo = now.subtract(7, 'day')
       
       return sessions.value.filter(session => {
-        if (!session.lastMessageTime) return false
-        const lastTime = dayjs(session.lastMessageTime)
+        const lastMessageTime = session.lastMessageTime || session.lastTime
+        if (!lastMessageTime) return false
+        const lastTime = dayjs(lastMessageTime)
         return lastTime.isAfter(sevenDaysAgo)
       }).length
     })

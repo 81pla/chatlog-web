@@ -45,4 +45,9 @@ app.use(store)
 app.use(router)
 app.use(ElementPlus)
 
+// 初始化应用数据
+store.dispatch('initApp').catch(error => {
+  console.error('应用初始化失败:', error)
+})
+
 app.mount('#app') 

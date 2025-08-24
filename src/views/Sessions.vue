@@ -41,13 +41,13 @@
               >
                 <div class="session-avatar">
                   <el-avatar :size="60">
-                    {{ getSessionInitial(session.name) }}
+                    {{ getSessionInitial(session.talkerName || session.name || session.displayName || session.talker) }}
                   </el-avatar>
                 </div>
                 <div class="session-info">
-                  <h4 class="session-name">{{ session.name || '未知' }}</h4>
-                  <p class="session-id">{{ session.id }}</p>
-                  <p class="session-time">{{ formatTime(session.lastMessageTime) }}</p>
+                  <h4 class="session-name">{{ session.talkerName || session.name || session.displayName || session.talker || '未知' }}</h4>
+                  <p class="session-id">{{ session.id || session.talker }}</p>
+                  <p class="session-time">{{ formatTime(session.lastMessageTime || session.lastTime) }}</p>
                 </div>
                 <div class="session-actions">
                   <el-button 
@@ -104,9 +104,10 @@ export default {
     // 过滤后的会话列表
     const filteredSessions = computed(() => {
       if (!searchKeyword.value) return sessions.value
+      const keyword = searchKeyword.value.toLowerCase()
       return sessions.value.filter(session => 
-        (session.name || '').toLowerCase().includes(searchKeyword.value.toLowerCase()) ||
-        (session.id || '').toLowerCase().includes(searchKeyword.value.toLowerCase())
+        (session.talkerName || session.name || session.displayName || session.talker || '').toLowerCase().includes(keyword) ||
+        (session.id || session.talker || '').toLowerCase().includes(keyword)
       )
     })
 
@@ -119,9 +120,15 @@ export default {
 
     // 加载会话列表
     const loadSessions = async () => {
+      const currentSource = store.getters.getCurrentSource
+      if (!currentSource) {
+        ElMessage.warning('请先选择数据源')
+        return
+      }
+      
       loading.value = true
       try {
-        const response = await api.getSessions()
+        const response = await api.getSessions(currentSource.source_id)
         sessions.value = response.data || []
         ElMessage.success(`加载了 ${sessions.value.length} 个会话`)
       } catch (error) {
@@ -143,17 +150,20 @@ export default {
 
     // 查看聊天记录
     const viewChatHistory = (session) => {
+      const talker = session.talkerName || session.name || session.displayName || 
+                   session.talker || session.id
       router.push({
         path: '/chatlog',
         query: {
-          talker: session.name || session.id
+          talker: talker
         }
       })
     }
 
     // 复制会话ID
     const copySessionId = (session) => {
-      const id = session.id || session.name
+      const id = session.id || session.talker || session.talkerName || 
+               session.name || session.displayName
       if (id) {
         navigator.clipboard.writeText(id).then(() => {
           ElMessage.success('会话ID已复制到剪贴板')

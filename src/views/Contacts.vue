@@ -35,10 +35,36 @@
             style="width: 100%"
             @row-click="handleRowClick"
           >
-            <el-table-column prop="UserName" label="用户名" width="200" />
-            <el-table-column prop="NickName" label="昵称" width="200" />
-            <el-table-column prop="Remark" label="备注" width="200" />
-            <el-table-column prop="Alias" label="别名" width="200" />
+            <el-table-column label="用户名" width="200">
+              <template #default="scope">
+                {{ scope.row.userName || scope.row.UserName || scope.row.username || scope.row.id || '未知' }}
+              </template>
+            </el-table-column>
+            <el-table-column label="昵称" width="200">
+              <template #default="scope">
+                {{ scope.row.nickName || scope.row.NickName || scope.row.nickname || scope.row.displayName || scope.row.name || '-' }}
+              </template>
+            </el-table-column>
+            <el-table-column label="备注" width="200">
+              <template #default="scope">
+                {{ scope.row.remark || scope.row.Remark || '-' }}
+              </template>
+            </el-table-column>
+            <el-table-column label="别名" width="200">
+              <template #default="scope">
+                {{ scope.row.alias || scope.row.Alias || '-' }}
+              </template>
+            </el-table-column>
+            <el-table-column label="添加时间" width="180">
+              <template #default="scope">
+                {{ formatAddTime(scope.row.add_time) }}
+              </template>
+            </el-table-column>
+            <el-table-column label="添加方式" width="150">
+              <template #default="scope">
+                {{ formatAddType(scope.row.add_type) }}
+              </template>
+            </el-table-column>
             <el-table-column label="操作" width="200">
               <template #default="scope">
                 <el-button
@@ -86,6 +112,7 @@ export default {
     const router = useRouter()
     const loading = ref(false)
     const contacts = ref([])
+    const total = ref(0)
     const searchKeyword = ref('')
     const currentPage = ref(1)
     const pageSize = ref(20)
@@ -93,28 +120,34 @@ export default {
     // 过滤后的联系人列表
     const filteredContacts = computed(() => {
       if (!searchKeyword.value) return contacts.value
+      const keyword = searchKeyword.value.toLowerCase()
       return contacts.value.filter(contact => 
-        (contact.UserName || '').toLowerCase().includes(searchKeyword.value.toLowerCase()) ||
-        (contact.NickName || '').toLowerCase().includes(searchKeyword.value.toLowerCase()) ||
-        (contact.Remark || '').toLowerCase().includes(searchKeyword.value.toLowerCase()) ||
-        (contact.Alias || '').toLowerCase().includes(searchKeyword.value.toLowerCase())
+        (contact.userName || contact.UserName || contact.username || contact.id || '').toLowerCase().includes(keyword) ||
+        (contact.nickName || contact.NickName || contact.nickname || contact.displayName || contact.name || '').toLowerCase().includes(keyword) ||
+        (contact.remark || contact.Remark || '').toLowerCase().includes(keyword) ||
+        (contact.alias || contact.Alias || '').toLowerCase().includes(keyword)
       )
     })
 
-    // 分页后的联系人列表
+    // 显示的联系人列表（API已处理分页，直接使用过滤后的数据）
     const paginatedContacts = computed(() => {
-      const start = (currentPage.value - 1) * pageSize.value
-      const end = start + pageSize.value
-      return filteredContacts.value.slice(start, end)
+      return filteredContacts.value
     })
 
     // 加载联系人列表
-    const loadContacts = async () => {
+    const loadContacts = async (page = 1) => {
+      const currentSource = store.getters.getCurrentSource
+      if (!currentSource) {
+        ElMessage.warning('请先选择数据源')
+        return
+      }
+      
       loading.value = true
       try {
-        const response = await api.getContacts()
+        const response = await api.getContacts(currentSource.source_id, page, pageSize.value)
         contacts.value = response.data || []
-        ElMessage.success(`加载了 ${contacts.value.length} 个联系人`)
+        total.value = response.total || 0
+        ElMessage.success(`加载了 ${contacts.value.length} 个联系人，共 ${total.value} 个`)
       } catch (error) {
         ElMessage.error('加载联系人失败: ' + error.message)
       } finally {
@@ -130,6 +163,7 @@ export default {
     // 分页处理
     const handlePageChange = (page) => {
       currentPage.value = page
+      loadContacts(page)
     }
 
     // 行点击处理
@@ -139,17 +173,22 @@ export default {
 
     // 查看聊天记录
     const viewChatHistory = (contact) => {
+      const talker = contact.userName || contact.UserName || contact.username || contact.id || 
+                   contact.nickName || contact.NickName || contact.nickname || contact.displayName || 
+                   contact.name || contact.alias || contact.Alias
       router.push({
         path: '/chatlog',
         query: {
-          talker: contact.UserName || contact.NickName || contact.Alias
+          talker: talker
         }
       })
     }
 
     // 复制联系人ID
     const copyContactId = (contact) => {
-      const id = contact.UserName || contact.NickName || contact.Alias
+      const id = contact.userName || contact.UserName || contact.username || contact.id || 
+               contact.nickName || contact.NickName || contact.nickname || contact.displayName || 
+               contact.name || contact.alias || contact.Alias
       if (id) {
         navigator.clipboard.writeText(id).then(() => {
           ElMessage.success('联系人ID已复制到剪贴板')
@@ -161,6 +200,38 @@ export default {
       }
     }
 
+    // 格式化添加时间
+    const formatAddTime = (addTime) => {
+      if (!addTime) return '-'
+      try {
+        const date = new Date(addTime)
+        return date.toLocaleString('zh-CN', {
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit'
+        })
+      } catch (error) {
+        return addTime
+      }
+    }
+
+    // 格式化添加方式
+    const formatAddType = (addType) => {
+      if (!addType) return '-'
+      const typeMap = {
+        'system_accepted': '系统通过',
+        'manual_add': '手动添加',
+        'scan_qr': '扫码添加',
+        'search_add': '搜索添加',
+        'group_add': '群聊添加',
+        'card_add': '名片添加',
+        'phone_add': '手机号添加'
+      }
+      return typeMap[addType] || addType
+    }
+
     onMounted(() => {
       loadContacts()
     })
@@ -168,6 +239,7 @@ export default {
     return {
       loading,
       contacts,
+      total,
       searchKeyword,
       currentPage,
       pageSize,
@@ -178,7 +250,9 @@ export default {
       handlePageChange,
       handleRowClick,
       viewChatHistory,
-      copyContactId
+      copyContactId,
+      formatAddTime,
+      formatAddType
     }
   }
 }

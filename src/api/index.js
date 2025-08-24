@@ -2,7 +2,7 @@ import axios from 'axios'
 
 // 根据环境选择API基础地址
 const API_BASE = process.env.NODE_ENV === 'production' 
-  ? 'http://127.0.0.1:5030' 
+  ? 'http://100.100.80.81:3099' 
   : '' // 开发环境使用代理
 
 // CSV解析工具函数
@@ -121,7 +121,7 @@ const parseChatLogs = (chatlogText) => {
 // 创建 axios 实例
 const api = axios.create({
   baseURL: API_BASE,
-  timeout: 10000
+  timeout: 30000 // 增加超时时间到30秒
 })
 
 // 请求拦截器
@@ -161,71 +161,140 @@ api.interceptors.response.use(
 )
 
 export default {
-  // 聊天记录查询
+  // 数据源管理 - 获取账户列表
+  async getSources() {
+    const response = await api.get('/api/admin/accounts')
+    if (response.data && response.data.success) {
+      return {
+        ...response,
+        data: response.data.data || []
+      }
+    }
+    return {
+      ...response,
+      data: []
+    }
+  },
+  
+  async testSource(sourceId) {
+    const response = await api.get('/api/v1/chatlog/test', {
+      params: { source: sourceId }
+    })
+    return response.data
+  },
+  
+  // 聊天记录查询 - 适配新的 JSON 格式响应
   async getChatLogs(params) {
     const response = await api.get('/api/v1/chatlog', { params })
+    // 新 API 直接返回 JSON 格式，不需要解析
+    if (response.data && response.data.success) {
+      return {
+        ...response,
+        data: response.data.data || [],
+        total: response.data.meta?.total || 0
+      }
+    }
     return {
       ...response,
-      data: parseChatLogs(response.data)
+      data: [],
+      total: 0
     }
   },
   
-  // 联系人列表
-  async getContacts() {
-    const response = await api.get('/api/v1/contact')
+  // 联系人列表 - 适配新的联系人 API
+  async getContacts(sourceId, page = 1, pageSize = 20) {
+    const response = await api.get('/api/v1/contact', {
+      params: { 
+        source: sourceId,
+        page: page,
+        pageSize: pageSize
+      }
+    })
+    if (response.data && response.data.success) {
+      return {
+        ...response,
+        data: response.data.data?.items || [],
+        total: response.data.data?.total || 0,
+        pagination: response.data.data?.pagination || {}
+      }
+    }
     return {
       ...response,
-      data: parseCSV(response.data)
+      data: [],
+      total: 0,
+      pagination: {}
     }
   },
   
-  // 群聊列表
-  async getChatrooms() {
-    const response = await api.get('/api/v1/chatroom')
+  // 群聊列表 - 通过会话接口获取群聊
+  async getChatrooms(sourceId) {
+    const response = await api.get('/api/v1/session', {
+      params: { 
+        source: sourceId,
+        includeChatroom: 1
+      }
+    })
+    if (response.data && response.data.success) {
+      // 过滤出群聊
+      const chatrooms = response.data.data.filter(session => 
+        session.talker && session.talker.includes('@chatroom')
+      )
+      return {
+        ...response,
+        data: chatrooms
+      }
+    }
     return {
       ...response,
-      data: parseCSV(response.data)
+      data: []
     }
   },
   
-  // 会话列表
-  async getSessions() {
-    const response = await api.get('/api/v1/session')
+  // 会话列表 - 适配新的会话 API
+  async getSessions(sourceId) {
+    const response = await api.get('/api/v1/session', {
+      params: { source: sourceId }
+    })
+    if (response.data && response.data.success) {
+      return {
+        ...response,
+        data: response.data.data || []
+      }
+    }
     return {
       ...response,
-      data: parseSessions(response.data)
+      data: []
     }
   },
   
-  // 多媒体内容
+  // 多媒体内容 - 更新基础URL
   getImageUrl(id) {
-    const base = process.env.NODE_ENV === 'production' ? 'http://127.0.0.1:5030' : ''
+    const base = process.env.NODE_ENV === 'production' ? 'http://100.100.80.81:3099' : ''
     return `${base}/image/${id}`
   },
   
   getVideoUrl(id) {
-    const base = process.env.NODE_ENV === 'production' ? 'http://127.0.0.1:5030' : ''
+    const base = process.env.NODE_ENV === 'production' ? 'http://100.100.80.81:3099' : ''
     return `${base}/video/${id}`
   },
   
   getFileUrl(id) {
-    const base = process.env.NODE_ENV === 'production' ? 'http://127.0.0.1:5030' : ''
+    const base = process.env.NODE_ENV === 'production' ? 'http://100.100.80.81:3099' : ''
     return `${base}/file/${id}`
   },
   
   getVoiceUrl(id) {
-    const base = process.env.NODE_ENV === 'production' ? 'http://127.0.0.1:5030' : ''
+    const base = process.env.NODE_ENV === 'production' ? 'http://100.100.80.81:3099' : ''
     return `${base}/voice/${id}`
   },
   
   getDataUrl(path) {
-    const base = process.env.NODE_ENV === 'production' ? 'http://127.0.0.1:5030' : ''
+    const base = process.env.NODE_ENV === 'production' ? 'http://100.100.80.81:3099' : ''
     return `${base}/data/${path}`
   },
   
-  // 导出聊天记录
+  // 导出聊天记录 - 适配新的导出格式
   exportChatLogs(params) {
-    // 移除blob响应类型，让API直接返回文本
     return api.get('/api/v1/chatlog', {
       params: {
         ...params,

@@ -56,6 +56,9 @@
           <span class="page-title">{{ $route.meta.title }}</span>
         </div>
         <div class="navbar-right">
+          <!-- 数据源选择器 -->
+          <SourceSelector @source-changed="handleSourceChanged" />
+          
           <el-button type="text" @click="refreshData">
             <el-icon><Refresh /></el-icon>
             刷新
@@ -75,9 +78,13 @@
 import { ref } from 'vue'
 import { useStore } from 'vuex'
 import { useRoute } from 'vue-router'
+import SourceSelector from '@/components/SourceSelector.vue'
 
 export default {
   name: 'Layout',
+  components: {
+    SourceSelector
+  },
   setup() {
     const collapsed = ref(false)
     const store = useStore()
@@ -100,10 +107,16 @@ export default {
           break
       }
     }
+    
+    const handleSourceChanged = (source) => {
+      // 当数据源切换时，自动刷新当前页面的数据
+      refreshData()
+    }
 
     return {
       collapsed,
-      refreshData
+      refreshData,
+      handleSourceChanged
     }
   }
 }
@@ -144,5 +157,6 @@ export default {
 .navbar-right {
   display: flex;
   align-items: center;
+  gap: 16px;
 }
 </style> 

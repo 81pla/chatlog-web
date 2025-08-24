@@ -184,27 +184,27 @@
           >
             <div class="chat-message" :class="{ 'self-message': isSelfMessage(message) }">
               <div class="message-avatar" v-if="!isSelfMessage(message)">
-                <el-avatar :size="36" class="sender-avatar" :style="{ backgroundColor: getAvatarColor(message.senderName) }">
-                  {{ getSenderInitial(message.senderName) }}
+                <el-avatar :size="36" class="sender-avatar" :style="{ backgroundColor: getAvatarColor(message.senderName || message.sender) }">
+                  {{ getSenderInitial(message.senderName || message.sender) }}
                 </el-avatar>
               </div>
               
               <div class="message-body">
                 <div class="message-info">
                   <span class="sender-name" :class="{ 'self-name': isSelfMessage(message) }">
-                    {{ message.senderName || '未知' }}
+                    {{ message.senderName || message.sender || '未知' }}
                   </span>
                   <span class="message-time">{{ formatTime(message.time) }}</span>
                   
                   <!-- 标签信息 -->
-                  <div class="message-tags" v-if="message.senderId || getMatchedKeywords(message.content).length > 0">
+                  <div class="message-tags" v-if="(message.senderId || message.sender) || getMatchedKeywords(message.content).length > 0">
                     <el-tag 
-                      v-if="message.senderId" 
+                      v-if="message.senderId || message.sender" 
                       size="small" 
                       type="info"
                       class="talker-tag"
                     >
-                      {{ message.senderId }}
+                      {{ message.senderId || message.sender }}
                     </el-tag>
                     <el-tag 
                       v-if="getMatchedKeywords(message.content).length > 0"
@@ -239,8 +239,8 @@
               </div>
               
               <div class="message-avatar" v-if="isSelfMessage(message)">
-                <el-avatar :size="36" class="sender-avatar self-avatar" :style="{ backgroundColor: getAvatarColor(message.senderName) }">
-                  {{ getSenderInitial(message.senderName) }}
+                <el-avatar :size="36" class="sender-avatar self-avatar" :style="{ backgroundColor: getAvatarColor(message.senderName || message.sender) }">
+                  {{ getSenderInitial(message.senderName || message.sender) }}
                 </el-avatar>
               </div>
             </div>
@@ -357,7 +357,12 @@ export default {
 
     // 判断是否为自己发送的消息
     const isSelfMessage = (message) => {
-      // "未知"代表自己发送的消息，应该显示在右边
+      // 新 API 直接提供 isSelf 字段
+      if (message.isSelf !== undefined) {
+        return message.isSelf
+      }
+      
+      // 兼容旧数据格式："未知"代表自己发送的消息，应该显示在右边
       if (!message.senderName || message.senderName === '未知') {
         return true
       }
@@ -509,11 +514,38 @@ export default {
     }
 
     // 更新聊天对象选项
-    const updateTalkerOptions = () => {
-      talkerOptions.value = searchHistory.value.talkers.map(talker => ({
+    const updateTalkerOptions = async () => {
+      // 从历史记录获取选项
+      const historyOptions = searchHistory.value.talkers.map(talker => ({
         value: talker,
-        label: talker
+        label: talker,
+        source: 'history'
       }))
+      
+      // 尝试从 API 获取会话列表
+      try {
+        if (store.getters.hasCurrentSource) {
+          const response = await store.dispatch('fetchSessions')
+          const sessionOptions = store.getters.getSessions.map(session => ({
+            value: session.talker || session.id,
+            label: session.talkerName || session.name || session.displayName || session.talker || session.id,
+            source: 'api'
+          }))
+          
+          // 合并选项，去重
+          const allOptions = [...historyOptions, ...sessionOptions]
+          const uniqueOptions = allOptions.filter((option, index, self) => 
+            index === self.findIndex(o => o.value === option.value)
+          )
+          
+          talkerOptions.value = uniqueOptions
+        } else {
+          talkerOptions.value = historyOptions
+        }
+      } catch (error) {
+        console.warn('获取会话列表失败，使用历史记录:', error)
+        talkerOptions.value = historyOptions
+      }
     }
 
     // 更新关键词选项
@@ -770,8 +802,9 @@ export default {
     }
 
     // 组件挂载时初始化
-    onMounted(() => {
+    onMounted(async () => {
       initializeHistory()
+      await updateTalkerOptions()
     })
 
     return {

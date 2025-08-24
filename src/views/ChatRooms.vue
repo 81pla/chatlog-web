@@ -35,11 +35,31 @@
             style="width: 100%"
             @row-click="handleRowClick"
           >
-            <el-table-column prop="Name" label="群名称" width="250" />
-            <el-table-column prop="Remark" label="备注" width="200" />
-            <el-table-column prop="NickName" label="昵称" width="200" />
-            <el-table-column prop="Owner" label="群主" width="200" />
-            <el-table-column prop="UserCount" label="成员数量" width="120" />
+            <el-table-column label="群名称" width="250">
+              <template #default="scope">
+                {{ scope.row.Name || scope.row.name || scope.row.displayName || scope.row.talkerName || '未知' }}
+              </template>
+            </el-table-column>
+            <el-table-column label="备注" width="200">
+              <template #default="scope">
+                {{ scope.row.Remark || scope.row.remark || scope.row.alias || '-' }}
+              </template>
+            </el-table-column>
+            <el-table-column label="昵称" width="200">
+              <template #default="scope">
+                {{ scope.row.NickName || scope.row.nickname || scope.row.displayName || '-' }}
+              </template>
+            </el-table-column>
+            <el-table-column label="群主" width="200">
+              <template #default="scope">
+                {{ scope.row.Owner || scope.row.owner || scope.row.ownerName || '-' }}
+              </template>
+            </el-table-column>
+            <el-table-column label="成员数量" width="120">
+              <template #default="scope">
+                {{ scope.row.UserCount || scope.row.userCount || scope.row.memberCount || '-' }}
+              </template>
+            </el-table-column>
             <el-table-column label="操作" width="200">
               <template #default="scope">
                 <el-button
@@ -94,11 +114,12 @@ export default {
     // 过滤后的群聊列表
     const filteredChatrooms = computed(() => {
       if (!searchKeyword.value) return chatrooms.value
+      const keyword = searchKeyword.value.toLowerCase()
       return chatrooms.value.filter(chatroom => 
-        (chatroom.Name || '').toLowerCase().includes(searchKeyword.value.toLowerCase()) ||
-        (chatroom.Remark || '').toLowerCase().includes(searchKeyword.value.toLowerCase()) ||
-        (chatroom.NickName || '').toLowerCase().includes(searchKeyword.value.toLowerCase()) ||
-        (chatroom.Owner || '').toLowerCase().includes(searchKeyword.value.toLowerCase())
+        (chatroom.Name || chatroom.name || chatroom.displayName || chatroom.talkerName || '').toLowerCase().includes(keyword) ||
+        (chatroom.Remark || chatroom.remark || chatroom.alias || '').toLowerCase().includes(keyword) ||
+        (chatroom.NickName || chatroom.nickname || chatroom.displayName || '').toLowerCase().includes(keyword) ||
+        (chatroom.Owner || chatroom.owner || chatroom.ownerName || '').toLowerCase().includes(keyword)
       )
     })
 
@@ -111,9 +132,15 @@ export default {
 
     // 加载群聊列表
     const loadChatrooms = async () => {
+      const currentSource = store.getters.getCurrentSource
+      if (!currentSource) {
+        ElMessage.warning('请先选择数据源')
+        return
+      }
+      
       loading.value = true
       try {
-        const response = await api.getChatrooms()
+        const response = await api.getChatrooms(currentSource.source_id)
         chatrooms.value = response.data || []
         ElMessage.success(`加载了 ${chatrooms.value.length} 个群聊`)
       } catch (error) {
@@ -140,17 +167,20 @@ export default {
 
     // 查看聊天记录
     const viewChatHistory = (chatroom) => {
+      const talker = chatroom.Name || chatroom.name || chatroom.displayName || 
+                   chatroom.talkerName || chatroom.id
       router.push({
         path: '/chatlog',
         query: {
-          talker: chatroom.Name || chatroom.id
+          talker: talker
         }
       })
     }
 
     // 复制群聊ID
     const copyChatroomId = (chatroom) => {
-      const id = chatroom.id || chatroom.Name
+      const id = chatroom.id || chatroom.Name || chatroom.name || 
+               chatroom.displayName || chatroom.talkerName
       if (id) {
         navigator.clipboard.writeText(id).then(() => {
           ElMessage.success('群聊ID已复制到剪贴板')

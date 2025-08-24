@@ -23,9 +23,9 @@ module.exports = defineConfig({
       }
     },
     proxy: {
-      // API请求代理
+      // API请求代理 - 指向新的 wechat-contact-api 项目
       '/api': {
-        target: 'http://100.100.90.3:5030',
+        target: process.env.VUE_APP_API_BASE_URL || 'http://100.100.80.81:3099',
         changeOrigin: true,
         ws: true,
         pathRewrite: {
@@ -34,7 +34,7 @@ module.exports = defineConfig({
       },
       // 图片文件代理
       '/image': {
-        target: 'http://100.100.90.3:5030',
+        target: process.env.VUE_APP_API_BASE_URL || 'http://100.100.80.81:3099',
         changeOrigin: true,
         pathRewrite: {
           '^/image': '/image'
@@ -42,7 +42,7 @@ module.exports = defineConfig({
       },
       // 视频文件代理
       '/video': {
-        target: 'http://100.100.90.3:5030',
+        target: process.env.VUE_APP_API_BASE_URL || 'http://100.100.80.81:3099',
         changeOrigin: true,
         pathRewrite: {
           '^/video': '/video'
@@ -50,7 +50,7 @@ module.exports = defineConfig({
       },
       // 语音文件代理
       '/voice': {
-        target: 'http://100.100.90.3:5030',
+        target: process.env.VUE_APP_API_BASE_URL || 'http://100.100.80.81:3099',
         changeOrigin: true,
         pathRewrite: {
           '^/voice': '/voice'
@@ -58,7 +58,7 @@ module.exports = defineConfig({
       },
       // 普通文件代理
       '/file': {
-        target: 'http://100.100.90.3:5030',
+        target: process.env.VUE_APP_API_BASE_URL || 'http://100.100.80.81:3099',
         changeOrigin: true,
         pathRewrite: {
           '^/file': '/file'
@@ -66,7 +66,7 @@ module.exports = defineConfig({
       },
       // 数据文件代理
       '/data': {
-        target: 'http://100.100.90.3:5030',
+        target: process.env.VUE_APP_API_BASE_URL || 'http://100.100.80.81:3099',
         changeOrigin: true,
         pathRewrite: {
           '^/data': '/data'
